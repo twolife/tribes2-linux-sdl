@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+# encoding=utf-8
+#
+# Copyright © 2026 Sébastien Noel <sebastien@twolife.be>
+# SPDX-License-Identifier: GPL-2.0-or-later
+import getopt
+import os
+import sys
+import sdl2
+import sdl2.ext
+from enum import Enum
+from typing import List
+from PIL import Image, ImageFile
+
+TRIBES2EXECDIR = os.path.dirname(os.path.realpath(__file__))
+
+if os.path.isdir('/usr/local/games/tribes2'):
+    TRIBES2DATADIR = '/usr/local/games/tribes2'
+elif os.path.isdir('/usr/share/games/tribes2'):
+    TRIBES2DATADIR = '/usr/share/games/tribes2'
+else:
+    TRIBES2DATADIR = TRIBES2EXECDIR
+
+
+def data_filename(filename: str) -> str:
+    return os.path.join(
+                TRIBES2DATADIR,
+                'menu',
+                filename,
+            )
+
+
+def is_in_rect(rect: sdl2.rect.SDL_Rect, x: int, y: int) -> bool:
+    return (x >= rect.x and (x < rect.x + rect.w)) and \
+           (y >= rect.y and (y < rect.y + rect.h))
+
+
+class Button(Enum):
+    ONLINE = {
+        'filename': 'onlineplay',
+        'argv': ['./tribes2.dynamic', '-online'],
+        'x': 182,
+        'y': 115,
+    }
+    LANPLAY = {
+        'filename': 'lanplay',
+        'argv': ['./tribes2.dynamic', '-nologin'],
+        'x': 182,
+        'y': 185,
+    }
+    QUIT = {
+        'filename': 'quit',
+        'x': 182,
+        'y': 263,
+    }
+
+
+def launch(argv: List[str]) -> None:
+    os.chdir(TRIBES2EXECDIR)
+
+    environ = os.environ.copy()
+    library_path = ['./libstdc++-3-libc6.2-2-2.10.0.so', './tribes2shim.so']
+    if 'LD_LIBRARY_PATH' in environ:
+        library_path.append(environ['LD_LIBRARY_PATH'])
+    environ['LD_PRELOAD'] = ':'.join(library_path)
+
+    try:
+        os.execvpe(argv[0], argv, environ)
+    except OSError as e:
+        print("%s: %s" % (argv, e))
+
+
+class T2Launch():
+    def __init__(self, argv):
+        sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO | sdl2.SDL_INIT_AUDIO)
+        centered = sdl2.SDL_WINDOWPOS_CENTERED
+
+        self.window = sdl2.ext.Window(
+                          'Tribes 2 Launcher',
+                          size=(640, 480),
+                          position=(centered, centered),
+                          flags=sdl2.SDL_SWSURFACE
+                      )
+        self.background_image = sdl2.ext.load_img(data_filename('background.png'))
+        self.imgs = {}
+        for b in Button:
+            filename = b.value['filename']
+            self.imgs[b.name] = {
+                'on': sdl2.ext.load_img(data_filename(f'{filename}_on.png')),
+                'off': sdl2.ext.load_img(data_filename(f'{filename}_off.png')),
+            }
+            if 'argv' in b.value:
+                b.value['argv'] += argv
+
+    def refresh_bg(self, highlight):
+        screen = self.window.get_surface()
+        sdl2.SDL_BlitSurface(self.background_image, None, screen, None)
+
+        for b in Button:
+            if b == highlight:
+                img = self.imgs[b.name]['on']
+            else:
+                img = self.imgs[b.name]['off']
+            rect = sdl2.rect.SDL_Rect(b.value['x'], b.value['y'], img.w, img.h)
+            sdl2.SDL_BlitSurface(img, None, screen, rect)
+
+        self.window.refresh()
+
+    def run(self) -> int:
+        rect_button_online =  sdl2.rect.SDL_Rect(Button.ONLINE.value['x'], Button.ONLINE.value['y'], 276, 39) 
+        rect_button_lanplay = sdl2.rect.SDL_Rect(Button.LANPLAY.value['x'], Button.LANPLAY.value['y'], 276, 39) 
+        rect_button_quit = sdl2.rect.SDL_Rect(Button.QUIT.value['x'], Button.QUIT.value['y'], 276, 39) 
+
+        running = True
+        need_redraw = False
+        highlight = None
+
+        self.refresh_bg(highlight)
+        while running:
+            events = sdl2.ext.get_events()
+            for event in events:
+                if event.type == sdl2.SDL_QUIT:
+                    running = False
+                    break
+                elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
+                    x = event.motion.x
+                    y = event.motion.y
+                    if is_in_rect(rect_button_online, x, y):
+                        launch(Button.ONLINE.value['argv'])
+                    elif is_in_rect(rect_button_lanplay, x, y):
+                        launch(Button.LANPLAY.value['argv'])
+                    elif is_in_rect(rect_button_quit, x, y):
+                        running = False
+                elif event.type == sdl2.SDL_MOUSEMOTION:
+                    x = event.motion.x
+                    y = event.motion.y
+                    if is_in_rect(rect_button_online, x, y):
+                        if highlight != Button.ONLINE:
+                            highlight = Button.ONLINE
+                            need_redraw = True
+                    elif is_in_rect(rect_button_lanplay, x, y):
+                        if highlight != Button.LANPLAY:
+                            highlight = Button.LANPLAY
+                            need_redraw = True
+                    elif is_in_rect(rect_button_quit, x, y):
+                        if highlight != Button.QUIT:
+                            highlight = Button.QUIT
+                            need_redraw = True
+                    else:
+                        if highlight is not None:
+                            highlight = None
+                            need_redraw = True
+
+            if need_redraw:
+                self.refresh_bg(highlight)
+                need_redraw = False
+
+            sdl2.SDL_Delay(100)
+
+        sdl2.ext.quit()
+        return 0
+
+
+if __name__ == "__main__":
+    argv = sys.argv[1:]
+    try:
+        opts, args = getopt.getopt(argv, "hv", ['help', 'version'])
+    except:
+        opts = []
+
+    for o, a in opts:
+        if o in ("-v", "--version"):
+            launch(['./tribes2', '--version'])
+            sys.exit()
+        elif o in ("-h", "--help"):
+            launch(['./tribes2', '--help'])
+            sys.exit()
+
+    os.environ['SDL_VIDEO_WAYLAND_WMCLASS'] = 't2launch'
+    os.environ['SDL_VIDEO_X11_WMCLASS'] = 't2launch'
+    t2launch = T2Launch(argv)
+    sys.exit(t2launch.run())

@@ -1,0 +1,43 @@
+On November 2 2008, Sierra/Vivendi disabled the authentication servers
+required for TRIBES 2 online multiplayer.
+Since January 2009, TribesNEXT provides a new multiplayer account system
+and master server, safely connecting tens of thousands of Tribes players around the world.
+TribesNEXT is unfortunately only available as a Windows patch.
+
+**********************************************
+* TribesNEXT for Loki's Tribes 2 build 25034 *
+**********************************************
+
+Features:
+- use TribesNext_rc2a.exe Windows patch as base
+- use an LD_PRELOAD shim with 'tribes2.dynamic', works on modern Linux system (SDL3, Wayland, ...)
+- fixed strcmp.cs
+- public.store & private.store are stored in ~/.loki/tribes2/
+
+
+Requirements:
+- Loki's Tribes 2 install, updated to build 25034 (tribes2-25034-cdrom-x86.run)
+- Follow instructions from https://github.com/twolife/tribes2-linux-sdl
+  to be able to play the game offline.
+
+
+Install:
+- copy the 'tribesnext' directory to the game directory
+- Optional (you can use the pre-build object): build the C shim code.
+- copy c_shim/libtribesnext.so to your game directory
+- run 'bash install.sh patch'
+
+Howto run game:
+  LD_PRELOAD=./libstdc++-3-libc6.2-2-2.10.0.so:./tribes2shim.so:./libtribesnext.so ./tribes2.dynamic -online
+
+
+Uninstall:
+- run 'bash install.sh unpatch'
+- remove libtribesnext.so from the game directory
+
+
+Credits/Thanks:
+  Many thanks to "calvin_balke" for his initial work more than a decade ago:
+  - https://tribesnext.com/forum/discussion/3329/tribesnext-patch-for-loki-port-on-linux
+  - https://dl.dropbox.com/s/g02o5oa2d1gecnk/t2patch.tar
+  This was really helpful, I wouldn't have sorted this out so quickly if I had started from scratch.

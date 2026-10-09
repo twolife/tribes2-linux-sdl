@@ -1,0 +1,9 @@
+Build environment requirements:
+- 32 bits x86 C compiler
+- ancient Ruby, statically linkable
+
+I choose to use an old Debian Jessie chroot:
+  debootstrap --no-check-sig --arch=i386 jessie /srv/jessie-i386  http://archive.debian.org/debian
+  chroot /srv/jessie-i386/
+
+  apt-get install build-essential pkg-config ruby2.1-dev

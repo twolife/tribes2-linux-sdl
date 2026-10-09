@@ -1,0 +1,37 @@
+--- a/t2csri/certstore.rb
++++ b/t2csri/certstore.rb
+@@ -16,21 +16,30 @@
+ $accCerts = Hash.new
+ $accPrivateKeys = Hash.new
+ 
++STORE_DIR = File.expand_path("~/.loki/tribes2")
++PUBLIC_STORE = File.join(STORE_DIR, "public.store")
++PRIVATE_STORE = File.join(STORE_DIR, "private.store")
++
++unless File.directory?(STORE_DIR)
++  Dir.mkdir(File.expand_path("~/.loki")) unless File.directory?(File.expand_path("~/.loki"))
++  Dir.mkdir(STORE_DIR)
++end
++
+ def certstore_loadAccounts
+-	IO.foreach('public.store') {|line| $accCerts[line.split("\t")[0].downcase] = line.rstrip.lstrip }
+-	IO.foreach('private.store') {|line| $accPrivateKeys[line.split("\t")[0].downcase] = line.rstrip.lstrip }
++	IO.foreach(PUBLIC_STORE) {|line| $accCerts[line.split("\t")[0].downcase] = line.rstrip.lstrip }
++	IO.foreach(PRIVATE_STORE) {|line| $accPrivateKeys[line.split("\t")[0].downcase] = line.rstrip.lstrip }
+ end
+ 
+ def certstore_addAccount(public, private)
+ 	$accCerts[public.split("\t")[0].downcase] = public
+ 	$accPrivateKeys[public.split("\t")[0].downcase] = private
+ 
+-	publicstore = File.new('public.store', 'a')
++	publicstore = File.new(PUBLIC_STORE, 'a')
+ 	publicstore.seek(0, IO::SEEK_END)
+ 	publicstore.puts(public + "\r\n")
+ 	publicstore.close
+ 
+-	privatestore = File.new('private.store', 'a')
++	privatestore = File.new(PRIVATE_STORE, 'a')
+ 	privatestore.seek(0, IO::SEEK_END)
+ 	privatestore.puts(private + "\r\n")
+ 	privatestore.close

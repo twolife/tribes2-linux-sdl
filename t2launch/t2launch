@@ -55,11 +55,14 @@ class Button(Enum):
     }
 
 
-def launch(argv: List[str]) -> None:
+def launch(argv: List[str], tribesnext=False) -> None:
     os.chdir(TRIBES2EXECDIR)
 
     environ = os.environ.copy()
     library_path = ['./libstdc++-3-libc6.2-2-2.10.0.so', './tribes2shim.so']
+    if tribesnext:
+        library_path.append('./libtribesnext.so')
+
     if 'LD_PRELOAD' in environ:
         library_path.extend(environ['LD_PRELOAD'].split(":"))
     environ['LD_PRELOAD'] = ':'.join(library_path)
@@ -126,7 +129,7 @@ class T2Launch():
                     x = event.motion.x
                     y = event.motion.y
                     if is_in_rect(rect_button_online, x, y):
-                        launch(Button.ONLINE.value['argv'])
+                        launch(Button.ONLINE.value['argv'], True)
                     elif is_in_rect(rect_button_lanplay, x, y):
                         launch(Button.LANPLAY.value['argv'])
                     elif is_in_rect(rect_button_quit, x, y):

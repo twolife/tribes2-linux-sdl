@@ -4,9 +4,9 @@
  $accCerts = Hash.new
  $accPrivateKeys = Hash.new
  
-+STORE_DIR = File.expand_path("~/.loki/tribes2")
-+PUBLIC_STORE = File.join(STORE_DIR, "public.store")
-+PRIVATE_STORE = File.join(STORE_DIR, "private.store")
++STORE_DIR = File.expand_path("~/.loki/tribes2") unless defined?(STORE_DIR)
++PUBLIC_STORE = File.join(STORE_DIR, "public.store") unless defined?(PUBLIC_STORE)
++PRIVATE_STORE = File.join(STORE_DIR, "private.store") unless defined?(PRIVATE_STORE)
 +
 +unless File.directory?(STORE_DIR)
 +  Dir.mkdir(File.expand_path("~/.loki")) unless File.directory?(File.expand_path("~/.loki"))
@@ -16,8 +16,8 @@
  def certstore_loadAccounts
 -	IO.foreach('public.store') {|line| $accCerts[line.split("\t")[0].downcase] = line.rstrip.lstrip }
 -	IO.foreach('private.store') {|line| $accPrivateKeys[line.split("\t")[0].downcase] = line.rstrip.lstrip }
-+	IO.foreach(PUBLIC_STORE) {|line| $accCerts[line.split("\t")[0].downcase] = line.rstrip.lstrip }
-+	IO.foreach(PRIVATE_STORE) {|line| $accPrivateKeys[line.split("\t")[0].downcase] = line.rstrip.lstrip }
++	IO.foreach(PUBLIC_STORE) {|line| $accCerts[line.split("\t")[0].downcase] = line.rstrip.lstrip } if File.file?(PUBLIC_STORE)
++	IO.foreach(PRIVATE_STORE) {|line| $accPrivateKeys[line.split("\t")[0].downcase] = line.rstrip.lstrip } if File.file?(PRIVATE_STORE)
  end
  
  def certstore_addAccount(public, private)
